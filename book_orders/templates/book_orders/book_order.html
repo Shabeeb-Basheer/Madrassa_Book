@@ -1,0 +1,116 @@
+<!-- templates/book_orders/book_order.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Book Order Form</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            function updateTotalAmount() {
+                let totalAmount = 0;
+                $('input[name="books"]:checked').each(function() {
+                    totalAmount += parseInt($(this).data('price'));
+                });
+                $('#totalAmount').text('Total Amount: ₹' + totalAmount);
+                $('#id_total_amount').val(totalAmount);
+            }
+
+            $('#id_selected_class').change(function() {
+                var selectedClassId = $(this).val();
+                $.ajax({
+                    url: '{% url "load_books" %}',
+                    data: {
+                        'selected_class': selectedClassId
+                    },
+                    success: function(data) {
+                        $('#books').empty();
+                        $.each(data, function(index, book) {
+                            $('#books').append(
+                                '<div class="form-check">' +
+                                '<input type="checkbox" class="form-check-input" name="books" value="' + book.id + '" data-price="' + book.price + '">' +
+                                '<label class="form-check-label">' + book.name + ' (₹' + book.price + ')</label>' +
+                                '</div>'
+                            );
+                        });
+                        $('input[name="books"]').change(updateTotalAmount);
+                    }
+                });
+            });
+
+            $('input[name="books"]').change(updateTotalAmount);
+        });
+    </script>
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+        }
+        .total-amount {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">Book Order Form</h2>
+        <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_name">Student Name:</label>
+                <input type="text" class="form-control" id="id_name" name="name" pattern="[A-Z a-z.]{3,25}" placeholder="Enter Your Name" value="{{ form.name.value|default_if_none:''  }}" required>
+                <div class="invalid-feedback">Please enter your name.</div>
+            </div>
+            <div class="form-group">
+                <label for="id_phone">Phone:</label>
+                <input type="text" class="form-control" id="id_phone" name="phone" pattern="[6789][0-9]{9}" placeholder="Enter your Phone Number" value="{{ form.phone.value|default_if_none:''  }}" required>
+                <div class="invalid-feedback">Please enter your phone number.</div>
+            </div>
+            <div class="form-group">
+                <label for="id_selected_class">Class:</label>
+                <select class="form-control" id="id_selected_class" name="selected_class" required>
+                    <option value="">Select Class</option>
+                    {% for class in form.selected_class.field.queryset %}
+                        <option value="{{ class.id }}" {% if class.id == form.selected_class.value %}selected{% endif %}>{{ class.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a class.</div>
+            </div>
+            <div class="form-group" id="books">
+                <label>Books:</label><br>
+                {% for book in form.books.queryset %}
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="books" value="{{ book.id }}" data-price="{{ book.price }}" {% if book.id in form.initial.books %}checked{% endif %}>
+                        <label class="form-check-label">{{ book.name }} (₹{{ book.price }})</label>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                <p id="totalAmount" class="total-amount">Total Amount: ₹{{ form.initial.total_amount }}</p>
+                <input type="hidden" id="id_total_amount" name="total_amount" value="{{ form.total_amount.value }}">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+<script>
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            var validation = Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+</script>
+
+</body>
+</html>
